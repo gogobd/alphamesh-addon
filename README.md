@@ -5,7 +5,12 @@ A Blender (2.8x) addon to create concave hulls (alpha-shapes)
 
 ## Installation:
 
-To be able to use the AlphaMesh addon you will have to install scipy into your Blender's python.
+To be able to use the AlphaMesh addon you will have to install scipy into your Blender's python. If you want to find out, where your Blender's python is try this in Scripting:
+
+```(python)
+>>> bpy.app.binary_path_python
+'.../.../python3.7m'
+```
 
 ### MacOS
 
