@@ -16,7 +16,5 @@ You'll find a section called "AlphaMesh addon" in Object Properties. This will b
 
 ![Adding](./images/Screenshot%202020-03-15%20at%2014.20.26.png)
 
-![Adding](./images/Screenshot%202020-03-15%20at%2014.20.51.png)
-
 ![Adding](./images/Screenshot%202020-03-15%20at%2014.25.48.png)
 
