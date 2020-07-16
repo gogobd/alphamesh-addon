@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh script",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 1, 7),
+    "version": (0, 1, 8),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh script (using SciPy)"),
@@ -22,9 +22,10 @@ import subprocess
 ensurepip.bootstrap()
 pybin = bpy.app.binary_path_python
 print(pybin)
-modules_path = bpy.utils.user_resource('SCRIPTS', path='modules', create=True)
-os.environ['PYTHONUSERBASE'] = modules_path
-subprocess.check_call([pybin, '-m', 'pip', 'install', '--user', 'scipy'])
+# modules_path = bpy.utils.user_resource('SCRIPTS', path='modules', create=True)
+# os.environ['PYTHONUSERBASE'] = modules_path
+subprocess.call([str(pybin), "-m", "pip", "install", "--upgrade", "pip"])
+subprocess.call([str(pybin), '-m', 'pip', 'install', '--user', 'scipy'])
 
 # 'C:\Program Files\Blender Foundation\Blender 2.82\2.82\python\bin\python.exe" -m pip install --user scipy'
 """
