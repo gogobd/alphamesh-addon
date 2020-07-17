@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh script",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 1, 8),
+    "version": (0, 1, 9),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh script (using SciPy)"),
@@ -25,7 +25,7 @@ print(pybin)
 # modules_path = bpy.utils.user_resource('SCRIPTS', path='modules', create=True)
 # os.environ['PYTHONUSERBASE'] = modules_path
 subprocess.call([str(pybin), "-m", "pip", "install", "--upgrade", "pip"])
-subprocess.call([str(pybin), '-m', 'pip', 'install', '--user', 'scipy'])
+subprocess.call([str(pybin), '-m', 'pip', 'install', '--force', 'scipy'])
 
 # 'C:\Program Files\Blender Foundation\Blender 2.82\2.82\python\bin\python.exe" -m pip install --user scipy'
 """
@@ -46,8 +46,15 @@ from bpy.types import Operator, Panel, UIList
 from bpy.props import FloatVectorProperty, IntProperty, StringProperty, FloatProperty, BoolProperty, CollectionProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
-import numpy as np
-from scipy.spatial import Delaunay
+try:
+    import numpy as np
+    from scipy.spatial import Delaunay
+except ImportError as e:
+    print("Could not import numpy/scipy. To install try:")
+    print(bpy.app.binary_path_python + " -m ensurepip")
+    print(bpy.app.binary_path_python + " -m pip install --upgrade pip")
+    print(bpy.app.binary_path_python + " -m pip install --force scipy")
+    raise e
 
 
 DEFAULT_QHULL_OPTIONS='Qbb Qc Qz Qx Q12'
