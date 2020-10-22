@@ -525,7 +525,7 @@ def render_one_by_one():
             if not os.path.isfile(filename + fe):
                 bpy.ops.render.render(write_still=True)
                 time.sleep(3)
-    except KeyboardInterrup:
+    except KeyboardInterrupt:
         print("Interrupted rendering.")
     scene.render.filepath = fp
 
