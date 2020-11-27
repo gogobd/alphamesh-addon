@@ -1,12 +1,12 @@
 # AlphaMesh Addon by Gogo.
 
 bl_info = {
-    "name": "Alpha Mesh script",
+    "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 1, 9),
+    "version": (0, 1, 10),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
-    "description": ("Alpha Mesh script (using SciPy)"),
+    "description": ("Alpha Mesh addon (using SciPy)"),
     "warning": "",  # used for warning icon and text in addons panel
     "wiki_url": "",
     "tracker_url": "",
@@ -51,9 +51,9 @@ try:
     from scipy.spatial import Delaunay
 except ImportError as e:
     print("Could not import numpy/scipy. To install try:")
-    print(bpy.app.binary_path_python + " -m ensurepip")
-    print(bpy.app.binary_path_python + " -m pip install --upgrade pip")
-    print(bpy.app.binary_path_python + " -m pip install --force scipy")
+    print(sys.executable + " -m ensurepip")
+    print(sys.executable + " -m pip install --upgrade pip")
+    print(sys.executable + " -m pip install --force scipy")
     raise e
 
 
