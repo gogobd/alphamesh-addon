@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 1, 10),
+    "version": (0, 1, 11),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh addon (using SciPy)"),
@@ -15,12 +15,13 @@ bl_info = {
 
 """
 import bpy
+import sys
 import os
 import ensurepip
 import subprocess
 
 ensurepip.bootstrap()
-pybin = bpy.app.binary_path_python
+pybin = sys.executable
 print(pybin)
 # modules_path = bpy.utils.user_resource('SCRIPTS', path='modules', create=True)
 # os.environ['PYTHONUSERBASE'] = modules_path
