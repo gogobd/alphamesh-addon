@@ -79,7 +79,7 @@ def add_alphamesh(self, context):
     obj.AlphaMesh_active = True
     obj.AlphaMesh_res = 1.0
     obj.AlphaMesh_outeronly = True
-    obj.AlphaMesh_smooth = True
+    obj.AlphaMesh_smooth = False
     obj.shape_key_add(name="Base")
     obj['qhull_options'] = DEFAULT_QHULL_OPTIONS
 
@@ -327,13 +327,14 @@ class UIListPanel_AlphaMesh(Panel):
             row = box.row()
             row.template_list("OBJECT_UL_AlphaMeshEmitters", "", obj, "AlphaMeshEmitters", obj, "AlphaMeshEmitters_index")
             col = row.column(align=True)
-            col.operator("op.alphameshemitters_item_add", icon="ADD", text="").add = True
-            col.operator("op.alphameshemitters_item_add", icon="REMOVE", text="").add = False
+            col.operator("op.alphameshemitters_item_add", icon="ADD", text="") # .add = True
+            col.operator("op.alphameshemitters_item_add", icon="REMOVE", text="") # .add = False
             if obj.AlphaMeshEmitters and obj.AlphaMeshEmitters_index < len(obj.AlphaMeshEmitters):
                 row = box.row()
                 row.label(text='Object: ')
                 row.prop_search(obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index], "obj", context.scene, "objects", text="")
-                if obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].obj != '':
+                if obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].name != '':
+                    # import pdb;pdb.set_trace()
                     if bpy.data.objects[obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].obj].type != 'MESH':
                         obj.AlphaMeshEmitter[obj.AlhaMeshEmitters_index].obj = ''
                     else:
@@ -395,11 +396,11 @@ class OBJECT_OT_alphameshemitters_item_add(bpy.types.Operator):
 
 
 class AlphaMeshEmitter(bpy.types.PropertyGroup):
-    # name = StringProperty()
-    active = BoolProperty()
-    id = IntProperty()
-    obj = StringProperty()
-    psys = StringProperty()
+    name: StringProperty()
+    active: BoolProperty()
+    id: IntProperty()
+    obj: StringProperty()
+    psys: StringProperty()
 
 
 def render_one_by_one():
@@ -481,11 +482,9 @@ def register():
 
 
 def unregister():
-    bpy.utils.unregister_class(SimpleOperator_RenderAll)
-    bpy.types.VIEW3D_MT_mesh_add.remove(add_alphamesh_button)
     for item in classes_list:
+        print(item)
         bpy.utils.unregister_class(item)
-    del bpy.types.Object['isAlphaMesh']
 
 
 if alphamesh not in bpy.app.handlers.frame_change_post:
