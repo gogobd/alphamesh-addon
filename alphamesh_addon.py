@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 2, 2),
+    "version": (0, 2, 3),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh addon (using SciPy)"),
@@ -31,7 +31,11 @@ try:
     import numpy as np
     from scipy.spatial import Delaunay
 except ImportError as e:
-    bpy_executable = bpy.app.binary_path_python
+    try:
+        bpy_executable = bpy.app.binary_path_python
+    except AttributeError:
+        bpy_executable = sys.executable
+
     hint = """
     ERROR: Alphamesh addon could not be installed
     Run this and try again:
