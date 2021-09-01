@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 1, 11),
+    "version": (0, 2, 2),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh addon (using SciPy)"),
@@ -11,26 +11,6 @@ bl_info = {
     "wiki_url": "",
     "tracker_url": "",
     "category": "Object"}
-
-
-"""
-import bpy
-import sys
-import os
-import ensurepip
-import subprocess
-
-ensurepip.bootstrap()
-pybin = sys.executable
-print(pybin)
-# modules_path = bpy.utils.user_resource('SCRIPTS', path='modules', create=True)
-# os.environ['PYTHONUSERBASE'] = modules_path
-subprocess.call([str(pybin), "-m", "pip", "install", "--upgrade", "pip"])
-subprocess.call([str(pybin), '-m', 'pip', 'install', '--force', 'scipy'])
-
-# 'C:\Program Files\Blender Foundation\Blender 2.82\2.82\python\bin\python.exe" -m pip install --user scipy'
-"""
-
 
 import bpy
 
@@ -51,11 +31,19 @@ try:
     import numpy as np
     from scipy.spatial import Delaunay
 except ImportError as e:
-    print("Could not import numpy/scipy. To install try:")
-    print(sys.executable + " -m ensurepip")
-    print(sys.executable + " -m pip install --upgrade pip")
-    print(sys.executable + " -m pip install --force scipy")
-    raise e
+    bpy_executable = bpy.app.binary_path_python
+    hint = """
+    ERROR: Alphamesh addon could not be installed
+    Run this and try again:
+    %(bpy_executable)s -m ensurepip
+    %(bpy_executable)s -m pip install --upgrade pip
+    %(bpy_executable)s -m pip install --force scipy
+    This will install scipy into your Blender's python.
+    """ % {'bpy_executable': bpy_executable}
+    print(hint)
+    os.system("%(bpy_executable)s -m ensurepip && %(bpy_executable)s -m pip install --upgrade pip && %(bpy_executable)s -m pip install --force scipy" % {'bpy_executable': bpy_executable})
+    import numpy as np
+    from scipy.spatial import Delaunay
 
 
 DEFAULT_QHULL_OPTIONS='Qbb Qc Qz Qx Q12'
@@ -141,103 +129,6 @@ def alphamesh_frame(context, depsgraph):
     print("_frame context:", context)
     print("_frame depsgraph:", depsgraph)
     alphamesh(context, depsgraph)
-
-# def alpha_shape_3d_alternative(points, alpha, options, only_outer=True):
-#     """
-#     Compute the alpha shape (concave hull) of a set of points.
-#     :param points: np.array of shape (n, 3) points.
-#     :param alpha: alpha value.
-#     :param only_outer: boolean value to specify if we keep only the outer border
-#     or also inner edges.
-#     :return: set of (i,j) pairs representing edges of the alpha-shape. (i,j) are
-#     the indices in the points array, edges and faces contain their indices.
-#     """
-#     def add_if_not_in_set(s, e):
-#         if not isinstance(e, set):
-#             e = frozenset(e)
-#         if e in s:
-#             # already there, so remove
-#             if only_outer:
-#                 s.remove(e)
-#             return s
-#         s.add(e)
-#         return s
-
-#     edges = set()
-#     tris = set()
-#     verts = set()
-
-#     simplices = Delaunay(points, qhull_options=options)
-
-#     # Loop over simplices:
-#     # ia, ib, ic, id = indices of corner points of the tetrahedron
-#     for ia, ib, ic, id in simplices.vertices:
-#         verts = verts.union(set((ia, ib, ic, id)))
-
-#         pa = points[ia]
-#         pb = points[ib]
-#         pc = points[ic]
-#         pd = points[id]
-
-#         # Computing radius of tetrahedron Circumsphere
-#         # http://mathworld.wolfram.com/Circumsphere.html
-
-#         pa2 = np.dot(pa, pa)
-#         pb2 = np.dot(pb, pb)
-#         pc2 = np.dot(pc, pc)
-#         pd2 = np.dot(pd, pd)
-
-#         a = np.linalg.det(np.array([np.append(pa, 1), np.append(pb, 1), np.append(pc, 1), np.append(pd, 1)]))
-
-#         Dx = np.linalg.det(np.array([np.array([pa2, pa[1], pa[2], 1]),
-#                                      np.array([pb2, pb[1], pb[2], 1]),
-#                                      np.array([pc2, pc[1], pc[2], 1]),
-#                                      np.array([pd2, pd[1], pd[2], 1])]))
-
-#         Dy = - np.linalg.det(np.array([np.array([pa2, pa[0], pa[2], 1]),
-#                                        np.array([pb2, pb[0], pb[2], 1]),
-#                                        np.array([pc2, pc[0], pc[2], 1]),
-#                                        np.array([pd2, pd[0], pd[2], 1])]))
-
-#         Dz = np.linalg.det(np.array([np.array([pa2, pa[0], pa[1], 1]),
-#                                      np.array([pb2, pb[0], pb[1], 1]),
-#                                      np.array([pc2, pc[0], pc[1], 1]),
-#                                      np.array([pd2, pd[0], pd[1], 1])]))
-
-#         c = np.linalg.det(np.array([np.array([pa2, pa[0], pa[1], pa[2]]),
-#                                     np.array([pb2, pb[0], pb[1], pb[2]]),
-#                                     np.array([pc2, pc[0], pc[1], pc[2]]),
-#                                     np.array([pd2, pd[0], pd[1], pd[2]])]))
-
-#         if a:
-#             try:
-#                 circum_r = math.sqrt(abs(math.pow(Dx, 2) + math.pow(Dy, 2) + math.pow(Dz, 2) - 4 * a * c)) / (2 * abs(a))
-#             except ValueError as e:
-#                 print(e)
-
-#             if circum_r < alpha:
-#                 # itertools.combinations(iterable, r)
-#                 edges = add_if_not_in_set(edges, frozenset((ia, ib)))
-#                 edges = add_if_not_in_set(edges, frozenset((ib, ic)))
-#                 edges = add_if_not_in_set(edges, frozenset((ic, id)))
-#                 edges = add_if_not_in_set(edges, frozenset((id, ia)))
-#                 edges = add_if_not_in_set(edges, frozenset((ia, ic)))
-#                 edges = add_if_not_in_set(edges, frozenset((ib, id)))
-
-#                 tris = add_if_not_in_set(tris, frozenset((ia, ib, ic)))
-#                 tris = add_if_not_in_set(tris, frozenset((ia, ib, id)))
-#                 tris = add_if_not_in_set(tris, frozenset((ia, ic, id)))
-#                 tris = add_if_not_in_set(tris, frozenset((ib, ic, id)))
-
-#     def to_list_of_lists(set_of_sets):
-#         list_of_sets = list(set_of_sets)
-#         list_of_lists = [list(i) for i in list_of_sets]
-#         return list_of_lists
-
-#     tris = to_list_of_lists(tris)
-#     edges = to_list_of_lists(edges)
-#     verts = np.unique(tris)
-#     return verts, edges, tris
 
 
 def alpha_shape_3D(pos, alpha, options, only_outer=True):
