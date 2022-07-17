@@ -3,14 +3,15 @@
 bl_info = {
     "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 2, 3),
+    "version": (0, 2, 4),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh addon (using SciPy)"),
     "warning": "",  # used for warning icon and text in addons panel
     "wiki_url": "",
     "tracker_url": "",
-    "category": "Object"}
+    "category": "Object",
+}
 
 import bpy
 
@@ -21,10 +22,18 @@ import math
 import ctypes
 from math import ceil, floor
 from collections import defaultdict
+import logging
 
 import bmesh
 from bpy.types import Operator, Panel, UIList
-from bpy.props import FloatVectorProperty, IntProperty, StringProperty, FloatProperty, BoolProperty, CollectionProperty
+from bpy.props import (
+    FloatVectorProperty,
+    IntProperty,
+    StringProperty,
+    FloatProperty,
+    BoolProperty,
+    CollectionProperty,
+)
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 try:
@@ -43,20 +52,24 @@ except ImportError as e:
     %(bpy_executable)s -m pip install --upgrade pip
     %(bpy_executable)s -m pip install --force scipy
     This will install scipy into your Blender's python.
-    """ % {'bpy_executable': bpy_executable}
-    print(hint)
-    os.system("%(bpy_executable)s -m ensurepip && %(bpy_executable)s -m pip install --upgrade pip && %(bpy_executable)s -m pip install --force scipy" % {'bpy_executable': bpy_executable})
+    """ % {
+        "bpy_executable": bpy_executable
+    }
+    logging.debug(hint)
+    os.system(
+        "%(bpy_executable)s -m ensurepip && %(bpy_executable)s -m pip install --upgrade pip && %(bpy_executable)s -m pip install --force scipy"
+        % {"bpy_executable": bpy_executable}
+    )
     import numpy as np
     from scipy.spatial import Delaunay
 
 
-DEFAULT_QHULL_OPTIONS='Qbb Qc Qz Qx Q12'
+DEFAULT_QHULL_OPTIONS = "Qbb Qc Qz Qx Q12"
 current_frame = -2
 IS_RENDERING = False
 
 
 class Timer(object):
-
     def __init__(self):
         self.start_time = time.time()
         self.last_lap = self.start_time
@@ -79,59 +92,59 @@ def add_alphamesh(self, context):
     bpy.context.collection.objects.link(obj)
     # context.view_layer.objects.active = obj
     # bpy.ops.outliner.item_activate(extend=False, deselect_all=True)
-    obj['isAlphaMesh'] = True
+    obj["isAlphaMesh"] = True
     obj.AlphaMesh_active = True
     obj.AlphaMesh_res = 1.0
     obj.AlphaMesh_outeronly = True
     obj.AlphaMesh_smooth = False
     obj.shape_key_add(name="Base")
-    obj['qhull_options'] = DEFAULT_QHULL_OPTIONS
+    obj["qhull_options"] = DEFAULT_QHULL_OPTIONS
 
 
 class OBJECT_OT_add_alphamesh(Operator, AddObjectHelper):
     """Create a new Alpha Mesh Object"""
+
     bl_idname = "mesh.add_alphamesh"
     bl_label = "Add alphamesh Object"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {"REGISTER", "UNDO"}
 
     scale = FloatVectorProperty(
         name="scale",
         default=(1.0, 1.0, 1.0),
-        subtype='TRANSLATION',
+        subtype="TRANSLATION",
         description="scaling",
     )
 
     def execute(self, context):
         add_alphamesh(self, context)
-        return {'FINISHED'}
+        return {"FINISHED"}
 
 
 def add_alphamesh_button(self, context):
     self.layout.operator(
-        OBJECT_OT_add_alphamesh.bl_idname,
-        text="AlphaMesh",
-        icon='OUTLINER_DATA_META')
+        OBJECT_OT_add_alphamesh.bl_idname, text="AlphaMesh", icon="OUTLINER_DATA_META"
+    )
 
 
 def alphamesh_prerender(context, depsgraph):
     global IS_RENDERING
     IS_RENDERING = True
-    print("_prerender context:", context)
-    print("_prerender depsgraph:", depsgraph)
+    logging.debug("_prerender context:", context)
+    logging.debug("_prerender depsgraph:", depsgraph)
     alphamesh(context, depsgraph)
 
 
 def alphamesh_postrender(context, depsgraph):
     global IS_RENDERING
     IS_RENDERING = False
-    print("_postrender context:", context)
-    print("_postrender depsgraph:", depsgraph)
+    logging.debug("_postrender context:", context)
+    logging.debug("_postrender depsgraph:", depsgraph)
     alphamesh(context, depsgraph)
 
 
 def alphamesh_frame(context, depsgraph):
-    print("_frame context:", context)
-    print("_frame depsgraph:", depsgraph)
+    logging.debug("_frame context:", context)
+    logging.debug("_frame depsgraph:", depsgraph)
     alphamesh(context, depsgraph)
 
 
@@ -147,40 +160,41 @@ def alpha_shape_3D(pos, alpha, options, only_outer=True):
 
     tetra = Delaunay(pos, qhull_options=options)
     # Find radius of the circumsphere.
-    # By definition, radius of the sphere fitting inside the tetrahedral needs 
+    # By definition, radius of the sphere fitting inside the tetrahedral needs
     # to be smaller than alpha value
     # http://mathworld.wolfram.com/Circumsphere.html
-    tetrapos = np.take(pos,tetra.vertices,axis=0)
-    normsq = np.sum(tetrapos**2,axis=2)[:,:,None]
-    ones = np.ones((tetrapos.shape[0],tetrapos.shape[1],1))
-    a = np.linalg.det(np.concatenate((tetrapos,ones),axis=2))
-    Dx = np.linalg.det(np.concatenate((normsq,tetrapos[:,:,[1,2]],ones),axis=2))
-    Dy = -np.linalg.det(np.concatenate((normsq,tetrapos[:,:,[0,2]],ones),axis=2))
-    Dz = np.linalg.det(np.concatenate((normsq,tetrapos[:,:,[0,1]],ones),axis=2))
-    c = np.linalg.det(np.concatenate((normsq,tetrapos),axis=2))
-    r = np.sqrt(Dx**2+Dy**2+Dz**2-4*a*c)/(2*np.abs(a))
+    tetrapos = np.take(pos, tetra.vertices, axis=0)
+    normsq = np.sum(tetrapos ** 2, axis=2)[:, :, None]
+    ones = np.ones((tetrapos.shape[0], tetrapos.shape[1], 1))
+    a = np.linalg.det(np.concatenate((tetrapos, ones), axis=2))
+    Dx = np.linalg.det(np.concatenate((normsq, tetrapos[:, :, [1, 2]], ones), axis=2))
+    Dy = -np.linalg.det(np.concatenate((normsq, tetrapos[:, :, [0, 2]], ones), axis=2))
+    Dz = np.linalg.det(np.concatenate((normsq, tetrapos[:, :, [0, 1]], ones), axis=2))
+    c = np.linalg.det(np.concatenate((normsq, tetrapos), axis=2))
+    r = np.sqrt(Dx ** 2 + Dy ** 2 + Dz ** 2 - 4 * a * c) / (2 * np.abs(a))
 
     # Find tetrahedrals
-    tetras = tetra.vertices[r<alpha,:]
+    tetras = tetra.vertices[r < alpha, :]
 
     # triangles
     TriComb = np.array([(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3)])
-    Triangles = tetras[:,TriComb].reshape(-1,3)
-    Triangles = np.sort(Triangles,axis=1)
+    Triangles = tetras[:, TriComb].reshape(-1, 3)
+    Triangles = np.sort(Triangles, axis=1)
     if only_outer:
         # Remove triangles that occurs twice, because they are within shapes
         TrianglesDict = defaultdict(int)
-        for tri in Triangles:TrianglesDict[tuple(tri)] += 1
-        Triangles=np.array([tri for tri in TrianglesDict if TrianglesDict[tri] == 1])
-    #edges
-    EdgeComb=np.array([(0, 1), (0, 2), (1, 2)])
-    Edges=Triangles[:,EdgeComb].reshape(-1,2)
-    Edges=np.sort(Edges,axis=1)
-    Edges=np.unique(Edges,axis=0)
-    Triangles=np.sort(Triangles,axis=1)
-    Triangles=np.unique(Triangles,axis=0)
+        for tri in Triangles:
+            TrianglesDict[tuple(tri)] += 1
+        Triangles = np.array([tri for tri in TrianglesDict if TrianglesDict[tri] == 1])
+    # edges
+    EdgeComb = np.array([(0, 1), (0, 2), (1, 2)])
+    Edges = Triangles[:, EdgeComb].reshape(-1, 2)
+    Edges = np.sort(Edges, axis=1)
+    Edges = np.unique(Edges, axis=0)
+    Triangles = np.sort(Triangles, axis=1)
+    Triangles = np.unique(Triangles, axis=0)
     Vertices = np.unique(Edges)
-    return Vertices,Edges,Triangles
+    return Vertices, Edges, Triangles
 
 
 def alphamesh(context, depsgraph):
@@ -189,9 +203,9 @@ def alphamesh(context, depsgraph):
     scn = bpy.context.scene
     active_before = bpy.context.view_layer.objects.active
 
-    print("context arg is  ", context)
-    print("depsgraph arg is", depsgraph)
-    print("bpy depsgraph is", bpy.context.evaluated_depsgraph_get())
+    logging.debug("context arg is  ", context)
+    logging.debug("depsgraph arg is", depsgraph)
+    logging.debug("bpy depsgraph is", bpy.context.evaluated_depsgraph_get())
 
     if depsgraph is None:
         if IS_RENDERING:
@@ -202,51 +216,51 @@ def alphamesh(context, depsgraph):
     depsgraph.update()
 
     if current_frame == scn.frame_current:
-        print("Skipping recalculation of frame %d." % current_frame)
+        logging.debug("Skipping recalculation of frame %d." % current_frame)
         return
     timer = Timer()
-    print("Starting AlphaMesh calcs...")
+    logging.debug("Starting AlphaMesh calcs...")
     AlphaMesh_infos = []
     for object in bpy.context.scene.objects:
-        if 'isAlphaMesh' in object:
+        if "isAlphaMesh" in object:
             if not object.AlphaMesh_active:
                 # bm = bmesh.new()
                 # bm.to_mesh(object.data)
                 continue
-            if not object.get('qhull_options'):
-                object['qhull_options'] = DEFAULT_QHULL_OPTIONS
+            if not object.get("qhull_options"):
+                object["qhull_options"] = DEFAULT_QHULL_OPTIONS
             obj_alphamesh = object
             # obj_alphamesh = obj_alphamesh.evaluated_get(depsgraph)
             AlphaMesh_info = {
-                'obj_alphamesh': obj_alphamesh,
-                'Emitter_infos': [],
+                "obj_alphamesh": obj_alphamesh,
+                "Emitter_infos": [],
             }
             for item in object.AlphaMeshEmitters:
                 if item.active == True:
-                    if item.obj != '':
-                        if item.psys != '':
+                    if item.obj != "":
+                        if item.psys != "":
                             EmitterInfo = {
-                                'object_name': item.obj,
-                                'particlesystem_name': item.psys,
+                                "object_name": item.obj,
+                                "particlesystem_name": item.psys,
                             }
-                            AlphaMesh_info['Emitter_infos'].append(EmitterInfo)
+                            AlphaMesh_info["Emitter_infos"].append(EmitterInfo)
             AlphaMesh_infos.append(AlphaMesh_info)
 
-    print("%d active AlphaMesh instance(s) found" % len(AlphaMesh_infos))
+    logging.debug("%d active AlphaMesh instance(s) found" % len(AlphaMesh_infos))
 
     for AlphaMesh_info in AlphaMesh_infos:
         # degp = bpy.context.evaluated_depsgraph_get()
         # depsgraph.update()
 
-        obj_alphamesh = AlphaMesh_info['obj_alphamesh']
-        Emitter_infos = AlphaMesh_info['Emitter_infos']
+        obj_alphamesh = AlphaMesh_info["obj_alphamesh"]
+        Emitter_infos = AlphaMesh_info["Emitter_infos"]
 
-        print("  ----AlphaMesh Object:", obj_alphamesh.name, "----")
+        logging.debug("  ----AlphaMesh Object:", obj_alphamesh.name, "----")
 
-        np_verts=[]
+        np_verts = []
         for Emitter_info in Emitter_infos:
-            obj_name = Emitter_info['object_name']
-            particlesystem_name = Emitter_info['particlesystem_name']
+            obj_name = Emitter_info["object_name"]
+            particlesystem_name = Emitter_info["particlesystem_name"]
             obj = depsgraph.objects.get(obj_name, None)
             obj = obj.evaluated_get(depsgraph)
             psys = obj.particle_systems[particlesystem_name]
@@ -254,100 +268,157 @@ def alphamesh(context, depsgraph):
             particles = psys.particles
             psysize = len(particles)
 
-            np_verts = np_verts + [np.array(particle.location) for index, particle in particles.items() if particle.alive_state == 'ALIVE']
+            np_verts = np_verts + [
+                np.array(particle.location)
+                for index, particle in particles.items()
+                if particle.alive_state == "ALIVE"
+            ]
 
         mesh = obj_alphamesh.data
         bm = bmesh.new()
         if len(np_verts) > 3:
-            np_verts = np_verts + np.random.uniform(low=-1e-11, high=1e-11, size=(len(np_verts),3,))    # jitter
+            np_verts = np_verts + np.random.uniform(
+                low=-1e-11, high=1e-11, size=(len(np_verts), 3,)
+            )  # jitter
 
-            print('  pack %d particles:' % len(np_verts), timer.lap(), 'sec')
+            logging.debug("  pack %d particles:" % len(np_verts), timer.lap(), "sec")
             vertices, edges, triangles = alpha_shape_3D(
-            # vertices, edges, triangles = alpha_shape_3d_alternative(
+                # vertices, edges, triangles = alpha_shape_3d_alternative(
                 np_verts,
                 alpha=obj_alphamesh.AlphaMesh_res,
-                options=obj_alphamesh['qhull_options'],
-                only_outer = obj_alphamesh.AlphaMesh_outeronly,
+                options=obj_alphamesh["qhull_options"],
+                only_outer=obj_alphamesh.AlphaMesh_outeronly,
             )
 
-            print('  alpha shape:', timer.lap(), 'sec')
-            print('      %s particles, %s vertices, %s edges, %s triangles' % (len(np_verts), len(vertices), len(edges), len(triangles)))
+            logging.debug("  alpha shape:", timer.lap(), "sec")
+            logging.debug(
+                "      %s particles, %s vertices, %s edges, %s triangles"
+                % (len(np_verts), len(vertices), len(edges), len(triangles))
+            )
 
-            lookup={}
+            lookup = {}
             for i, v in enumerate(vertices):
                 lookup[v] = i
                 bm.verts.new(np_verts[v])  # add a new vert
 
-            print('  vertices added:', timer.lap(), 'sec')
+            logging.debug("  vertices added:", timer.lap(), "sec")
 
             bm.verts.ensure_lookup_table()
 
             for t in triangles:
-                a,b,c = t
-                bm.faces.new([bm.verts[lookup[a]], bm.verts[lookup[b]], bm.verts[lookup[c]]])
-            print('  triangles added:', timer.lap(), 'sec')
+                a, b, c = t
+                bm.faces.new(
+                    [bm.verts[lookup[a]], bm.verts[lookup[b]], bm.verts[lookup[c]]]
+                )
+            logging.debug("  triangles added:", timer.lap(), "sec")
 
             for f in bm.faces:
-                 f.smooth = obj_alphamesh.AlphaMesh_smooth
+                f.smooth = obj_alphamesh.AlphaMesh_smooth
 
             bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
             mesh.update(calc_edges=True)
-            print('  normals:', timer.lap(), 'sec')
+            logging.debug("  normals:", timer.lap(), "sec")
 
         bm.to_mesh(mesh)
         bm.clear()
         mesh.update()
         bm.free()  # always do this when finished
-        print('  Bmesh:', timer.lap(), 'sec')
+        logging.debug("  Bmesh:", timer.lap(), "sec")
 
     bpy.context.view_layer.objects.active = active_before
     current_frame = scn.frame_current
     if IS_RENDERING:
         time.sleep(1)
-    print('Total:', timer.stop(), 'sec')
+    logging.debug("Total:", timer.stop(), "sec")
 
 
 class OBJECT_UL_AlphaMeshEmitters(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self, context, layout, data, item, icon, active_data, active_propname, index
+    ):
         split = layout.split(factor=0.1)
         split.prop(item, "active", text="")
-        split.prop(item, "name", text="", emboss=False, translate=False, icon='OUTLINER_OB_META')
+        split.prop(
+            item,
+            "name",
+            text="",
+            emboss=False,
+            translate=False,
+            icon="OUTLINER_OB_META",
+        )
 
 
 class UIListPanel_AlphaMesh(Panel):
     """Creates a Panel in the Object properties window"""
+
     bl_label = "AlphaMesh addon"
     bl_idname = "OBJECT_PT_ui_list_example"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
     bl_context = "object"
     # bl_options = {'DEFAULT_CLOSED'}
 
     def draw(self, context):
-        obj = context.object        
-        if 'isAlphaMesh' in obj:
+        obj = context.object
+        if "isAlphaMesh" in obj:
             layout = self.layout
             box = layout.box()
             row = box.row()
-            row.template_list("OBJECT_UL_AlphaMeshEmitters", "", obj, "AlphaMeshEmitters", obj, "AlphaMeshEmitters_index")
+            row.template_list(
+                "OBJECT_UL_AlphaMeshEmitters",
+                "",
+                obj,
+                "AlphaMeshEmitters",
+                obj,
+                "AlphaMeshEmitters_index",
+            )
             col = row.column(align=True)
-            col.operator("op.alphameshemitters_item_add", icon="ADD", text="") # .add = True
-            col.operator("op.alphameshemitters_item_add", icon="REMOVE", text="") # .add = False
-            if obj.AlphaMeshEmitters and obj.AlphaMeshEmitters_index < len(obj.AlphaMeshEmitters):
+            col.operator(
+                "op.alphameshemitters_item_add", icon="ADD", text=""
+            )  # .add = True
+            col.operator(
+                "op.alphameshemitters_item_add", icon="REMOVE", text=""
+            )  # .add = False
+            if obj.AlphaMeshEmitters and obj.AlphaMeshEmitters_index < len(
+                obj.AlphaMeshEmitters
+            ):
                 row = box.row()
-                row.label(text='Object: ')
-                row.prop_search(obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index], "obj", context.scene, "objects", text="")
-                if obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].name != '':
+                row.label(text="Object: ")
+                row.prop_search(
+                    obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index],
+                    "obj",
+                    context.scene,
+                    "objects",
+                    text="",
+                )
+                if (
+                    obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].name != ""
+                    and obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].obj
+                ):
                     # import pdb;pdb.set_trace()
-                    if bpy.data.objects[obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].obj].type != 'MESH':
-                        obj.AlphaMeshEmitter[obj.AlhaMeshEmitters_index].obj = ''
+                    if obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].obj and (
+                        bpy.data.objects[
+                            obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].obj
+                        ].type
+                        != "MESH"
+                    ):
+                        obj.AlphaMeshEmitter[obj.AlhaMeshEmitters_index].obj = ""
                     else:
                         row = box.row()
-                        row.label(text='Particles: ')
-                        row.prop_search(obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index], "psys",
-                                        bpy.data.objects[obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].obj], "particle_systems",
-                                        text="")
-                        if obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].psys != '':
+                        row.label(text="Particles: ")
+                        row.prop_search(
+                            obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index],
+                            "psys",
+                            bpy.data.objects[
+                                obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].obj
+                            ],
+                            "particle_systems",
+                            text="",
+                        )
+                        if (
+                            obj.AlphaMeshEmitters[obj.AlphaMeshEmitters_index].psys
+                            != ""
+                        ):
                             row = box.row()
             box = layout.box()
             row = box.row()
@@ -360,20 +431,28 @@ class UIListPanel_AlphaMesh(Panel):
             row.prop(obj, "AlphaMesh_active", text="active")
             box = layout.box()
             row = box.row()
-            row.operator("object.simple_operator_updatealphamesh", text="Update AlphaShape", icon="MESH_DATA")
+            row.operator(
+                "object.simple_operator_updatealphamesh",
+                text="Update AlphaShape",
+                icon="MESH_DATA",
+            )
             row = box.row()
-            row.operator("object.simple_operator_renderall", text="Render Animation (workaround)", icon='RENDER_ANIMATION')
+            row.operator(
+                "object.simple_operator_renderall",
+                text="Render Animation (workaround)",
+                icon="RENDER_ANIMATION",
+            )
             box = box.box()
             box.active = False
             box.alert = False
             row = box.row()
-            row.alignment = 'CENTER'
+            row.alignment = "CENTER"
             row.label(text="AlphaMesh addon by Gogo.")
         else:
             layout = self.layout
             box = layout.box()
             row = box.row()
-            row.label(text='Please select an AlphaMesh object!', icon='ERROR')
+            row.label(text="Please select an AlphaMesh object!", icon="ERROR")
 
 
 class OBJECT_OT_alphameshemitters_item_add(bpy.types.Operator):
@@ -389,14 +468,14 @@ class OBJECT_OT_alphameshemitters_item_add(bpy.types.Operator):
             if add:
                 item.add()
                 l = len(item)
-                item[-1].name = ("AlphaMeshEmitter." + str(l))
+                item[-1].name = "AlphaMeshEmitter." + str(l)
                 item[-1].active = True
                 item[-1].res = 0.25
                 item[-1].id = l
             else:
                 index = ob.AlphaMesh_index
                 item.remove(index)
-        return {'FINISHED'}
+        return {"FINISHED"}
 
 
 class AlphaMeshEmitter(bpy.types.PropertyGroup):
@@ -417,18 +496,19 @@ def render_one_by_one():
     try:
         for frame in range(scene.frame_start, scene.frame_end + 1):
             scene.frame_set(frame)
-            filename = fp + ('image_%04d' % frame)
-            scene.render.filepath = filename    
+            filename = fp + ("image_%04d" % frame)
+            scene.render.filepath = filename
             if not os.path.isfile(filename + fe):
                 bpy.ops.render.render(write_still=True)
                 time.sleep(3)
     except KeyboardInterrupt:
-        print("Interrupted rendering.")
+        logging.debug("Interrupted rendering.")
     scene.render.filepath = fp
 
 
 class SimpleOperator_RenderAll(bpy.types.Operator):
     """Tooltip"""
+
     bl_idname = "object.simple_operator_renderall"
     bl_label = "Render frames one by one"
 
@@ -437,28 +517,29 @@ class SimpleOperator_RenderAll(bpy.types.Operator):
     #     return context.active_object is not None
 
     def execute(self, context):
-        self.report({'INFO'}, "Animation rendering started.")
+        self.report({"INFO"}, "Animation rendering started.")
         render_one_by_one()
-        self.report({'INFO'}, "Animation rendering finished!")
-        return {'FINISHED'}
+        self.report({"INFO"}, "Animation rendering finished!")
+        return {"FINISHED"}
 
 
 class SimpleOperator_UpdateAlphaMesh(bpy.types.Operator):
     """Tooltip"""
+
     bl_idname = "object.simple_operator_updatealphamesh"
     bl_label = "Update AlphaMesh"
 
     @classmethod
     def poll(cls, context):
-        return context.active_object.get('isAlphaMesh')
+        return context.active_object.get("isAlphaMesh")
 
     def execute(self, context):
         global current_frame
-        self.report({'INFO'}, "Update AlphaMesh started.")
+        self.report({"INFO"}, "Update AlphaMesh started.")
         current_frame = -2
         alphamesh(context, depsgraph=None)
-        self.report({'INFO'}, "Update AlphaMesh finished!")
-        return {'FINISHED'}
+        self.report({"INFO"}, "Update AlphaMesh finished!")
+        return {"FINISHED"}
 
 
 classes_list = [
@@ -487,12 +568,12 @@ def register():
 
 def unregister():
     for item in classes_list:
-        print(item)
+        logging.debug(item)
         bpy.utils.unregister_class(item)
 
 
 if alphamesh not in bpy.app.handlers.frame_change_post:
-    print('Registering AlphaMesh addon handlers...')
+    logging.debug("Registering AlphaMesh addon handlers...")
     bpy.app.handlers.persistent(alphamesh_frame)
     bpy.app.handlers.frame_change_post.append(alphamesh_frame)
     bpy.app.handlers.persistent(alphamesh_prerender)
@@ -502,8 +583,8 @@ if alphamesh not in bpy.app.handlers.frame_change_post:
     bpy.app.handlers.render_post.append(alphamesh_postrender)
     bpy.app.handlers.render_cancel.append(alphamesh_postrender)
     bpy.app.handlers.render_complete.append(alphamesh_postrender)
-    print('AlphaMesh addon handlers created successfully.')
+    logging.debug("AlphaMesh addon handlers created successfully.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     register()
