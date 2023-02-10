@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 2, 4),
+    "version": (0, 2, 5),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh addon (using SciPy)"),
@@ -57,7 +57,7 @@ except ImportError as e:
     }
     logging.debug(hint)
     os.system(
-        "%(bpy_executable)s -m ensurepip && %(bpy_executable)s -m pip install --upgrade pip && %(bpy_executable)s -m pip install --force scipy"
+        "%(bpy_executable)s -m ensurepip && %(bpy_executable)s -m pip install --upgrade pip && %(bpy_executable)s -m pip install pip install --upgrade --upgrade-strategy only-if-needed scipy"
         % {"bpy_executable": bpy_executable}
     )
     import numpy as np
@@ -90,6 +90,10 @@ def add_alphamesh(self, context):
     mesh = bpy.data.meshes.new(name="AlphaMesh")
     obj = bpy.data.objects.new("AlphaMesh", mesh)
     bpy.context.collection.objects.link(obj)
+    for other_obj in bpy.data.objects:
+        other_obj.select_set(False)
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
     # context.view_layer.objects.active = obj
     # bpy.ops.outliner.item_activate(extend=False, deselect_all=True)
     obj["isAlphaMesh"] = True
@@ -164,14 +168,14 @@ def alpha_shape_3D(pos, alpha, options, only_outer=True):
     # to be smaller than alpha value
     # http://mathworld.wolfram.com/Circumsphere.html
     tetrapos = np.take(pos, tetra.vertices, axis=0)
-    normsq = np.sum(tetrapos ** 2, axis=2)[:, :, None]
+    normsq = np.sum(tetrapos**2, axis=2)[:, :, None]
     ones = np.ones((tetrapos.shape[0], tetrapos.shape[1], 1))
     a = np.linalg.det(np.concatenate((tetrapos, ones), axis=2))
     Dx = np.linalg.det(np.concatenate((normsq, tetrapos[:, :, [1, 2]], ones), axis=2))
     Dy = -np.linalg.det(np.concatenate((normsq, tetrapos[:, :, [0, 2]], ones), axis=2))
     Dz = np.linalg.det(np.concatenate((normsq, tetrapos[:, :, [0, 1]], ones), axis=2))
     c = np.linalg.det(np.concatenate((normsq, tetrapos), axis=2))
-    r = np.sqrt(Dx ** 2 + Dy ** 2 + Dz ** 2 - 4 * a * c) / (2 * np.abs(a))
+    r = np.sqrt(Dx**2 + Dy**2 + Dz**2 - 4 * a * c) / (2 * np.abs(a))
 
     # Find tetrahedrals
     tetras = tetra.vertices[r < alpha, :]
@@ -278,7 +282,12 @@ def alphamesh(context, depsgraph):
         bm = bmesh.new()
         if len(np_verts) > 3:
             np_verts = np_verts + np.random.uniform(
-                low=-1e-11, high=1e-11, size=(len(np_verts), 3,)
+                low=-1e-11,
+                high=1e-11,
+                size=(
+                    len(np_verts),
+                    3,
+                ),
             )  # jitter
 
             logging.debug("  pack %d particles:" % len(np_verts), timer.lap(), "sec")
