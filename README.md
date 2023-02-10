@@ -1,6 +1,6 @@
 # alphamesh-addon
 
-A Blender (2.8x, 2.9x and 3.0) addon to create concave hulls (alpha-shapes)
+A Blender (2.8x, 2.9x and 3.x) addon to create concave hulls (alpha-shapes)
 
 ![Demo](./images/Screenshot%202020-03-15%20at%2014.25.53.png)
 
