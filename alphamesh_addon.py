@@ -167,7 +167,7 @@ def alpha_shape_3D(pos, alpha, options, only_outer=True):
     # By definition, radius of the sphere fitting inside the tetrahedral needs
     # to be smaller than alpha value
     # http://mathworld.wolfram.com/Circumsphere.html
-    tetrapos = np.take(pos, tetra.vertices, axis=0)
+    tetrapos = np.take(pos, tetra.simplices, axis=0)
     normsq = np.sum(tetrapos**2, axis=2)[:, :, None]
     ones = np.ones((tetrapos.shape[0], tetrapos.shape[1], 1))
     a = np.linalg.det(np.concatenate((tetrapos, ones), axis=2))
@@ -178,7 +178,7 @@ def alpha_shape_3D(pos, alpha, options, only_outer=True):
     r = np.sqrt(Dx**2 + Dy**2 + Dz**2 - 4 * a * c) / (2 * np.abs(a))
 
     # Find tetrahedrals
-    tetras = tetra.vertices[r < alpha, :]
+    tetras = tetra.simplices[r < alpha, :]
 
     # triangles
     TriComb = np.array([(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3)])
