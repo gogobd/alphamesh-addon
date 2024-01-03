@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 2, 7),
+    "version": (0, 2, 6),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh addon (using SciPy)"),
@@ -56,10 +56,18 @@ except (ImportError, ModuleNotFoundError) as e:
         "bpy_executable": bpy_executable
     }
     logging.debug(hint)
-    os.system(
-        "%(bpy_executable)s -m ensurepip && %(bpy_executable)s -m pip install --upgrade pip && %(bpy_executable)s -m pip install pip install --upgrade --upgrade-strategy only-if-needed scipy"
-        % {"bpy_executable": bpy_executable}
-    )
+    print(hint)
+
+    command = '"%(bpy_executable)s" -m ensurepip ' % {"bpy_executable": bpy_executable}
+    print(command)
+    os.system(command)
+    command = '"%(bpy_executable)s" -m pip install --upgrade pip' % {"bpy_executable": bpy_executable}
+    print(command)
+    os.system(command)
+    command = '"%(bpy_executable)s" -m pip install --force scipy' % {"bpy_executable": bpy_executable}
+    print(command)
+    os.system(command)
+
     import numpy as np
     from scipy.spatial import Delaunay
 
