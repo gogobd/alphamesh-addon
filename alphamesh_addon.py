@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 2, 5),
+    "version": (0, 2, 7),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh addon (using SciPy)"),
@@ -39,7 +39,7 @@ from bpy_extras.object_utils import AddObjectHelper, object_data_add
 try:
     import numpy as np
     from scipy.spatial import Delaunay
-except ImportError as e:
+except (ImportError, ModuleNotFoundError) as e:
     try:
         bpy_executable = bpy.app.binary_path_python
     except AttributeError:
