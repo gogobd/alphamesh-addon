@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 2, 6),
+    "version": (0, 2, 7),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh addon (using SciPy)"),
@@ -50,7 +50,7 @@ except (ImportError, ModuleNotFoundError) as e:
     Run this and try again:
     %(bpy_executable)s -m ensurepip
     %(bpy_executable)s -m pip install --upgrade pip
-    %(bpy_executable)s -m pip install --force scipy
+    %(bpy_executable)s -m pip install --force scipy==1.14.1
     This will install scipy into your Blender's python.
     """ % {
         "bpy_executable": bpy_executable
@@ -64,7 +64,7 @@ except (ImportError, ModuleNotFoundError) as e:
     command = '"%(bpy_executable)s" -m pip install --upgrade pip' % {"bpy_executable": bpy_executable}
     print(command)
     os.system(command)
-    command = '"%(bpy_executable)s" -m pip install --force scipy' % {"bpy_executable": bpy_executable}
+    command = '"%(bpy_executable)s" -m pip install --force scipy==1.14.1' % {"bpy_executable": bpy_executable}
     print(command)
     os.system(command)
 
