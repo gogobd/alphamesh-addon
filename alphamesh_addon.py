@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 2, 7),
+    "version": (0, 2, 8),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh addon (using SciPy)"),
