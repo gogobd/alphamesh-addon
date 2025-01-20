@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Alpha Mesh addon",
     "author": "Georg Gogo. BERNHARD <gogo@bluedynamics.com>",
-    "version": (0, 2, 8),
+    "version": (0, 2, 9),
     "blender": (2, 82, 0),
     "location": "Properties > Object Tab",
     "description": ("Alpha Mesh addon (using SciPy)"),
@@ -64,7 +64,7 @@ except (ImportError, ModuleNotFoundError) as e:
     command = '"%(bpy_executable)s" -m pip install --upgrade pip' % {"bpy_executable": bpy_executable}
     print(command)
     os.system(command)
-    command = '"%(bpy_executable)s" -m pip install --force scipy==1.14.1' % {"bpy_executable": bpy_executable}
+    command = '"%(bpy_executable)s" -m pip install scipy==1.14.1 --upgrade --upgrade-strategy only-if-needed' % {"bpy_executable": bpy_executable}
     print(command)
     os.system(command)
 
